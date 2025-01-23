@@ -1,5 +1,6 @@
 # Credit to Kevin Dick at Tevora
 # May 16, 2016
+# Note: This has not been upgraded to python3. Feel free to fork and implement yourself, I had no need.
 # http://threat.tevora.com/penetration-testing-with-splunk-leveraging-splunk-admin-credentials-to-own-the-enterprise/
 import getpass
 import splunk.auth
