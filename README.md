@@ -3,11 +3,14 @@ Version 1.2
 
 TBG Security
 Ryan Hays
+Cole Lucas
 
 This app is to help with penetration testing and Red Teaming within environments that have a Splunk deployment.
 
 This app will allow the engineer to spawn a Reverse of Bind Shell from a Splunk server to allow the engineer to
 interact with the server and expand influence within the environment.
+
+I upgraded the original project to support python3 for newer splunk versions. It is mostly untested, except the rev_shell functionality.
 
 # Install
 Download the release from https://github.com/TBGSecurity/splunk_shells/archive/1.2.tar.gz
