@@ -13,7 +13,7 @@ interact with the server and expand influence within the environment.
 I upgraded the original project to support python3 for newer splunk versions. It is mostly untested, except the rev_shell functionality.
 
 # Install
-Download the release from https://github.com/TBGSecurity/splunk_shells/archive/1.2.tar.gz
+Download the release from https://github.com/ItsWatchMakerr/splunk_shells_py3/releases/download/v1.0.0/splunk_shells_py3.tar.gz
 
 Navigate to the "Manage Apps" and click on "Install app from file"
 
